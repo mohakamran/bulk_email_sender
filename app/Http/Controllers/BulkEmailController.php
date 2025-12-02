@@ -17,30 +17,34 @@ class BulkEmailController extends Controller
         return view('bulk-email');
     }
 
-    public function data(Request $request)
-    {
-        $query = EmailJob::latest();
+public function data(Request $request)
+{
+    // Start query
+    $query = EmailJob::query()->latest();
 
-        // Search functionality
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('university', 'like', "%{$search}%")
-                  ->orWhere('research', 'like', "%{$search}%");
-            });
-        }
+    // --- SEARCH ---
+    if ($request->filled('search')) {
+        $search = $request->search;
 
-        // Filter by status
-        if ($request->filled('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
-        }
-
-        $emailJobs = $query->paginate(10);
-
-        return view('bulk-email-data', compact('emailJobs'));
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'LIKE', "%{$search}%")
+              ->orWhere('email', 'LIKE', "%{$search}%")
+              ->orWhere('university', 'LIKE', "%{$search}%")
+              ->orWhere('research', 'LIKE', "%{$search}%");
+        });
     }
+
+    // --- STATUS FILTER ---
+    if ($request->filled('status') && $request->status !== 'all') {
+        $query->where('status', $request->status);
+    }
+
+    // Pagination with query string preserved
+    $emailJobs = $query->paginate(50)->withQueryString();
+
+    return view('bulk-email-data', compact('emailJobs'));
+}
+
 
     public function store(Request $request)
     {
